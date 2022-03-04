@@ -2,9 +2,12 @@ import cv2
 import pytesseract as pt
 import numpy as np
 
-def config_img(image):
+
+def img_get_txt(image):
     custom_config = r'--oem 3 --psm 6'
-    pt.image_to_string(image, config=custom_config)
+    c = pt.image_to_string(image, config=custom_config)
+    return c
+
 
 # get grayscale image
 def get_grayscale(image):
@@ -64,3 +67,8 @@ def match_template(image, template):
     return cv2.matchTemplate(image, template, cv2.TM_CCOEFF_NORMED)
 
 
+img = r"..\images\invoice-sample.jpg"
+txt = img_get_txt(img)
+print(txt)
+cv2.imshow('img', img)
+cv2.waitKey(0)
