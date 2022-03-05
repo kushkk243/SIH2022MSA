@@ -6,7 +6,8 @@ import numpy as np
 def img_get_txt(image):
     custom_config = r'--oem 3 --psm 6'
     c = pt.image_to_string(image, config=custom_config)
-    return c
+    d = pt.image_to_data(image, config=custom_config)
+    return d
 
 
 # get grayscale image
@@ -67,10 +68,11 @@ def match_template(image, template):
     return cv2.matchTemplate(image, template, cv2.TM_CCOEFF_NORMED)
 
 
-img = cv2.imread(r"..\SIH2022MSA\images\image.jpg")
-gray = get_grayscale()
-thrsh = thresholding(img)
-txt = img_get_txt(thrsh)
-print(txt)
-cv2.imshow('img', img)
+img = cv2.imread(r"..\SIH2022MSA\images\invoice-sample.jpg")
+gray = get_grayscale(img)
+cv2.imshow("Threshold",gray)
 cv2.waitKey(0)
+txt = img_get_txt(gray)
+print(txt)
+'''cv2.imshow('img', img)
+cv2.waitKey(0)'''
