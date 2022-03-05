@@ -67,8 +67,10 @@ def match_template(image, template):
     return cv2.matchTemplate(image, template, cv2.TM_CCOEFF_NORMED)
 
 
-img = r"..\images\invoice-sample.jpg"
-txt = img_get_txt(img)
+img = cv2.imread(r"..\SIH2022MSA\images\image.jpg")
+gray = get_grayscale()
+thrsh = thresholding(img)
+txt = img_get_txt(thrsh)
 print(txt)
 cv2.imshow('img', img)
 cv2.waitKey(0)
