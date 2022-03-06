@@ -1,4 +1,5 @@
 import os
+import pandas as pd
 import numpy
 from numpy import vectorize
 from sklearn.feature_extraction.text import TfidfVectorizer
