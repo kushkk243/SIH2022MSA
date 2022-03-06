@@ -1,78 +1,58 @@
-import cv2
-import pytesseract as pt
-import numpy as np
+import json
+import os
+import sys
+import requests
+import time
+# If you are using a Jupyter Notebook, uncomment the following line.
+# %matplotlib inline
+import matplotlib.pyplot as plt
+from matplotlib.patches import Polygon
+from PIL import Image
+from io import BytesIO
 
+missing_env = False
+# Add your Computer Vision subscription key and endpoint to your environment variables.
+endpoint = "https://sih2022msa.cognitiveservices.azure.com"
+subscription_key = "30cb1b653c124b95bf433136e275e1a3"
 
-def img_get_txt(image):
-    custom_config = r'--oem 3 --psm 6'
-    c = pt.image_to_string(image, config=custom_config)
-    d = pt.image_to_data(image, config=custom_config)
-    return d
+text_recognition_url = endpoint + "/vision/v3.1/read/analyze"
 
+# Set image_url to the URL of an image that you want to recognize.
+image_url = "https://raw.githubusercontent.com/MicrosoftDocs/azure-docs/master/articles/cognitive-services/Computer-vision/Images/readsample.jpg"
 
-# get grayscale image
-def get_grayscale(image):
-    return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+headers = {'Ocp-Apim-Subscription-Key': subscription_key,'Content-Type': 'application/octet-stream'}
+with open(r'..\SIH2022MSA\images\invoice-sample.jpg', 'rb') as f:
+    data = f.read()
+response = requests.post(
+    text_recognition_url, headers=headers, data=data)
+response.raise_for_status()
 
+# Extracting text requires two API calls: One call to submit the
+# image for processing, the other to retrieve the text found in the image.
 
-# noise removal
-def remove_noise(image):
-    return cv2.medianBlur(image, 5)
+# Holds the URI used to retrieve the recognized text.
+operation_url = response.headers["Operation-Location"]
 
+# The recognized text isn't immediately available, so poll to wait for completion.
+analysis = {}
+poll = True
+while (poll):
+    response_final = requests.get(
+        response.headers["Operation-Location"], headers=headers)
+    analysis = response_final.json()
 
-# thresholding
-def thresholding(image):
-    return cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+    print(json.dumps(analysis, indent=4))
 
+    time.sleep(1)
+    if ("analyzeResult" in analysis):
+        poll = False
+    if ("status" in analysis and analysis['status'] == 'failed'):
+        poll = False
 
-# dilation
-def dilate(image):
-    kernel = np.ones((5, 5), np.uint8)
-    return cv2.dilate(image, kernel, iterations=1)
-
-
-# erosion
-def erode(image):
-    kernel = np.ones((5, 5), np.uint8)
-    return cv2.erode(image, kernel, iterations=1)
-
-
-# opening - erosion followed by dilation
-def opening(image):
-    kernel = np.ones((5, 5), np.uint8)
-    return cv2.morphologyEx(image, cv2.MORPH_OPEN, kernel)
-
-
-# canny edge detection
-def canny(image):
-    return cv2.Canny(image, 100, 200)
-
-
-# skew correction
-def deskew(image):
-    coords = np.column_stack(np.where(image > 0))
-    angle = cv2.minAreaRect(coords)[-1]
-    if angle < -45:
-        angle = -(90 + angle)
-    else:
-        angle = -angle
-    (h, w) = image.shape[:2]
-    center = (w // 2, h // 2)
-    M = cv2.getRotationMatrix2D(center, angle, 1.0)
-    rotated = cv2.warpAffine(image, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
-    return rotated
-
-
-# template matching
-def match_template(image, template):
-    return cv2.matchTemplate(image, template, cv2.TM_CCOEFF_NORMED)
-
-
-img = cv2.imread(r"..\SIH2022MSA\images\invoice-sample.jpg")
-gray = get_grayscale(img)
-cv2.imshow("Threshold",gray)
-cv2.waitKey(0)
-txt = img_get_txt(gray)
-print(txt)
-'''cv2.imshow('img', img)
-cv2.waitKey(0)'''
+polygons = []
+if ("analyzeResult" in analysis):
+    # Extract the recognized text, with bounding boxes.
+    polygons = [(line["text"])
+                for line in analysis["analyzeResult"]["readResults"][0]["lines"]]
+print(" ".join(polygons))
+# Display the image and overlay it with the extracted text.
