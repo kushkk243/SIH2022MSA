@@ -1,7 +1,7 @@
 import cv2
 from easyocr import Reader
 
-lang = ['en', 'hi', '']
+lang = ['en', 'hi']
 
 
 def read_txt(file_path):
